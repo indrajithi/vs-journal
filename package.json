@@ -15,8 +15,16 @@
     "commands": [
         {
             "command": "extension.createJournalEntry",
-            "title": "Create Journal Entry"
-        }
+            "title": "VSJournal: Create New Journal"
+        },
+        {
+          "command": "extension.setGitRemote",
+          "title": "VSJournal: Set Git Remote"
+      },
+      {
+        "command": "extension.syncToGitHub",
+        "title": "VSJournal: Sync Remote Git"
+    }
     ]
 },
   "scripts": {

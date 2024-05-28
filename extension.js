@@ -1,4 +1,4 @@
-/* eslint-disable max-len */
+ 
 const vscode = require('vscode')
 const fs = require('fs')
 const os = require('os')
@@ -32,7 +32,7 @@ function createDirsIfNotExist() {
 function activate(context) {
   const disposableCreateJournal = vscode.commands.registerCommand('extension.createJournalEntry', function() {
     const date = new Date()
-    // eslint-disable-next-line max-len
+     
     const fileName = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}.md`
     const filePath = path.join(JOURNALS_DIR, fileName)
 
@@ -104,7 +104,7 @@ function activate(context) {
     process.chdir(ROOT_DIR)
 
     if (!isGitRepository()) {
-      // eslint-disable-next-line max-len
+       
       vscode.window.showErrorMessage('VSJournal: Please run set remote command before sync.')
       return
     }
@@ -125,7 +125,7 @@ function activate(context) {
         return
       }
 
-      exec('git add . && git commit -m "Sync to GitHub"', (error, stdout, stderr) => {
+      exec('git add . && git commit -m "Sync to Remote"', (error, stdout, stderr) => {
         if (error) {
           vscode.window.showErrorMessage(`VSJournal: Failed to commit changes: ${error.message}`)
           return
@@ -159,10 +159,13 @@ function activate(context) {
 
 
   function pushToOriginMaster() {
-    // eslint-disable-next-line max-len
+
+		vscode.window.showInformationMessage('VSJournal: Syncing remote repository...')
+
+     
     exec('git fetch && git branch --set-upstream-to=origin/master master && git config pull.rebase false && git pull --strategy=recursive -X theirs --allow-unrelated-histories', (error, stdout, stderr) => {
       if (error) {
-        vscode.window.showErrorMessage(`VSJournal: Failed to pull changes from GitHub: ${error.message}`)
+        vscode.window.showErrorMessage(`VSJournal: Failed to pull changes from remote repo: ${error.message}`)
         return
       }
       if (stderr) {
@@ -174,15 +177,15 @@ function activate(context) {
 
   function pushChanges() {
     exec('git push --set-upstream origin master', (error, stdout, stderr) => {
-      // eslint-disable-next-line max-len
+       
       if (error && error.code !== 128) { // Ignore exit code 128 (non-error, e.g., when the branch is already up-to-date)
-        vscode.window.showErrorMessage(`VSJournal: Failed to push changes to GitHub: ${error.message}`)
+        vscode.window.showErrorMessage(`VSJournal: Failed to push changes to remote repository: ${error.message}`)
         return
       }
       if (stderr) {
         console.log(`git push stderr: ${stderr}`)
       }
-      vscode.window.showInformationMessage('VSJournal: Changes synced to GitHub successfully.')
+      vscode.window.showInformationMessage('VSJournal: Changes synced to remote repository')
     })
   }
 

@@ -1,21 +1,27 @@
 {
   "name": "vs-journal",
-  "displayName": "vs-journal",
-  "description": "",
-  "version": "0.0.1",
+  "displayName": "VSJournal: Create Journals and Notes",
+  "description": "Create Journals and Notes and sync to your remote repository",
+  "version": "0.0.3",
+  "publisher": "indr4jith",
   "engines": {
     "vscode": "^1.89.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/indrajithi/vs-journal.git"
   },
   "categories": [
     "Other"
   ],
+  "icon": "images/journal.png",
   "activationEvents": [],
   "main": "./extension.js",
   "contributes": {
     "commands": [
       {
         "command": "extension.createJournalEntry",
-        "title": "VSJournal: Create New Journal"
+        "title": "VSJournal: Journal"
       },
       {
         "command": "extension.createNoteEntry",

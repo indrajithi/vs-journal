@@ -56,14 +56,18 @@ function activate(context) {
     })
   })
 
+	function formatTitle(title) {
+		return title.toLowerCase().replace(/\s+/g, '-');
+	}
+
   function createNewNote(title) {
     const date = new Date()
-    const noteTitle = title ? date.toISOString() + '-' + title + '.md' : date.toISOString() + '.md'
+    const noteTitle = title ? date.toISOString().slice(0, 19) + '-' + formatTitle(title) + '.md' : date.toISOString().slice(0, 19) + '.md'
     createDirsIfNotExist()
 
     const filePath = path.join(NOTES_DIR, noteTitle)
     if (!fs.existsSync(filePath)) {
-      fs.writeFileSync(filePath, `# Note Entry - ${date.toUTCString()}\n\n`)
+      fs.writeFileSync(filePath, `# Note: ${title} - ${date.toUTCString().slice(0, 19)}\n\n`)
     }
 
     vscode.workspace.openTextDocument(filePath).then((doc) => {

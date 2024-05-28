@@ -165,7 +165,9 @@ function activate(context) {
      
     exec('git fetch && git branch --set-upstream-to=origin/master master && git config pull.rebase false && git pull --strategy=recursive -X theirs --allow-unrelated-histories', (error, stdout, stderr) => {
       if (error) {
-        vscode.window.showErrorMessage(`VSJournal: Failed to pull changes from remote repo: ${error.message}`)
+				if (error.message.includes(`fatal: the requested upstream branch 'origin/master' does not exist`)){
+					pushChanges()
+				}
         return
       }
       if (stderr) {

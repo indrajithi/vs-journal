@@ -23,7 +23,7 @@ function createDirsIfNotExist() {
 
 
 function activate(context) {
-  const disposable = vscode.commands.registerCommand('extension.createJournalEntry', function() {
+  const disposableCreateJournal = vscode.commands.registerCommand('extension.createJournalEntry', function() {
     const date = new Date()
     // eslint-disable-next-line max-len
     const fileName = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}.md`
@@ -40,15 +40,13 @@ function activate(context) {
   })
 
   const disposableSetGitRemote = vscode.commands.registerCommand('extension.setGitRemote', async function() {
-    const journalDir = path.join(os.homedir(), 'VSJournal')
-
-    if (!fs.existsSync(journalDir)) {
+    if (!fs.existsSync(ROOT_DIR)) {
       createDirsIfNotExist()
     }
 
-    process.chdir(journalDir)
+    process.chdir(ROOT_DIR)
 
-    if (!isGitRepository(journalDir)) {
+    if (!isGitRepository(ROOT_DIR)) {
       exec('git init', (error, stdout, stderr) => {
         if (error) {
           vscode.window.showErrorMessage(`Failed to initialize Git repository: ${error.message}`)
@@ -66,14 +64,12 @@ function activate(context) {
   })
 
   const disposableSync = vscode.commands.registerCommand('extension.syncToGitHub', function() {
-    const journalDir = path.join(os.homedir(), 'VSJournal')
-
-    if (!fs.existsSync(journalDir)) {
+    if (!fs.existsSync(ROOT_DIR)) {
       vscode.window.showErrorMessage('VSJournal directory does not exist. Please create it first.')
       return
     }
 
-    process.chdir(journalDir)
+    process.chdir(ROOT_DIR)
 
     if (!isGitRepository()) {
       // eslint-disable-next-line max-len
@@ -81,7 +77,6 @@ function activate(context) {
       return
     }
 
-    // Check if there are changes to commit
     exec('git status --porcelain', (error, stdout, stderr) => {
       if (error) {
         vscode.window.showErrorMessage(`Failed to check for changes: ${error.message}`)
@@ -92,14 +87,12 @@ function activate(context) {
         return
       }
 
-      // If there are no changes to commit, display a message and return
       if (stdout.trim() === '') {
         console.log('No changes to sync.')
         vscode.window.showInformationMessage('No changes to sync.')
         return
       }
 
-      // Execute git commands to add, commit, and push changes
       exec('git add . && git commit -m "Sync to GitHub"', (error, stdout, stderr) => {
         if (error) {
           vscode.window.showErrorMessage(`Failed to commit changes: ${error.message}`)
@@ -110,7 +103,6 @@ function activate(context) {
           return
         }
 
-        // Ensure there is a local master branch
         exec('git rev-parse --verify master', (error, stdout, stderr) => {
           if (error || stderr) {
             // If master branch doesn't exist, create it
@@ -123,11 +115,9 @@ function activate(context) {
                 vscode.window.showErrorMessage(`Failed to create master branch: ${stderr}`)
                 return
               }
-              // Push changes to origin master
               pushToOriginMaster()
             })
           } else {
-            // Push changes to origin master
             pushToOriginMaster()
           }
         })
@@ -164,7 +154,7 @@ function activate(context) {
     })
   }
 
-  context.subscriptions.push(disposable, disposableSetGitRemote, disposableSync)
+  context.subscriptions.push(disposableCreateJournal, disposableSetGitRemote, disposableSync)
 }
 
 function isGitRepository(directory) {
@@ -174,13 +164,11 @@ function isGitRepository(directory) {
 
 
 function setRemote() {
-  // Prompt user for Git remote URL
   vscode.window.showInputBox({
     placeHolder: 'Enter Git remote URL',
     prompt: 'Enter the URL of the Git remote repository (e.g., git@github.com:username/repository.git)',
   }).then((remoteUrl) => {
     if (!remoteUrl) {
-      // User cancelled the input box
       return
     }
 
@@ -202,17 +190,14 @@ function setRemote() {
 }
 
 function checkoutMaster() {
-  // Check if the repository has any commits
   exec('git rev-parse --is-inside-work-tree', (error, stdout, stderr) => {
     if (error || stderr) {
       vscode.window.showErrorMessage(`Failed to check if inside a Git repository: ${error?.message || stderr}`)
       return
     }
 
-    // Check the current branch
     exec('git rev-parse --abbrev-ref HEAD', (error, stdout, stderr) => {
       if (error || stderr) {
-        // If there is no branch yet, create the master branch
         if (stderr.includes('unknown revision or path not in the working tree')) {
           createMasterBranch()
         } else {

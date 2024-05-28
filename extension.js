@@ -7,9 +7,11 @@ const { exec } = require('child_process');
 /**
  * @param {vscode.ExtensionContext} context
  */
+
+const journalDir = path.join(os.homedir(), 'VSJournal');
+
 function activate(context) {
 	let disposable = vscode.commands.registerCommand('extension.createJournalEntry', function () {
-		const journalDir = path.join(os.homedir(), 'VSJournal');
 		const journalsDir = path.join(journalDir, 'journals');
 		const date = new Date();
 		const fileName = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}.md`;
@@ -185,11 +187,54 @@ function setRemote() {
 									vscode.window.showErrorMessage(`Failed to set Git remote: ${stderr}`);
 									return;
 							}
+							checkoutMaster()
 							vscode.window.showInformationMessage('Git remote set successfully.');
 					});
 			});
 	});
 }
+
+function checkoutMaster() {
+	// Check if the repository has any commits
+	exec('git rev-parse --is-inside-work-tree', (error, stdout, stderr) => {
+			if (error || stderr) {
+					vscode.window.showErrorMessage(`Failed to check if inside a Git repository: ${error?.message || stderr}`);
+					return;
+			}
+
+			// Check the current branch
+			exec('git rev-parse --abbrev-ref HEAD', (error, stdout, stderr) => {
+					if (error || stderr) {
+							// If there is no branch yet, create the master branch
+							if (stderr.includes("unknown revision or path not in the working tree")) {
+									createMasterBranch();
+							} else {
+									vscode.window.showErrorMessage(`Failed to get current branch: ${error?.message || stderr}`);
+							}
+							return;
+					}
+
+					const currentBranch = stdout.trim();
+					if (currentBranch === 'master') {
+							vscode.window.showInformationMessage('Already on master branch.');
+					} else {
+							createMasterBranch();
+					}
+			});
+	});
+}
+
+function createMasterBranch() {
+	exec('git checkout -b master', (error, stdout, stderr) => {
+			if (error && !stderr.includes("Switched to a new branch 'master'")) {
+					vscode.window.showErrorMessage(`Failed to create master branch: ${error.message}`);
+					return;
+			}
+			vscode.window.showInformationMessage('Switched to master branch.');
+	});
+}
+
+
 
 
 function deactivate() {}

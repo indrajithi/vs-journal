@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 const vscode = require('vscode')
 const fs = require('fs')
 const os = require('os')
@@ -10,6 +11,8 @@ const {exec} = require('child_process')
 
 const ROOT_DIR = path.join(os.homedir(), 'VSJournal')
 const JOURNALS_DIR = path.join(ROOT_DIR, 'journals')
+const NOTES_DIR = path.join(ROOT_DIR, 'notes')
+
 
 function createDirsIfNotExist() {
   if (!fs.existsSync(ROOT_DIR)) {
@@ -18,6 +21,10 @@ function createDirsIfNotExist() {
 
   if (!fs.existsSync(JOURNALS_DIR)) {
     fs.mkdirSync(JOURNALS_DIR)
+  }
+
+  if (!fs.existsSync(NOTES_DIR)) {
+    fs.mkdirSync(NOTES_DIR)
   }
 }
 
@@ -39,6 +46,31 @@ function activate(context) {
     })
   })
 
+
+  const disposableCreateNote = vscode.commands.registerCommand('extension.createNoteEntry', function() {
+    vscode.window.showInputBox({
+      placeHolder: 'Enter Note Title',
+      prompt: 'Enter a title for the note or Leave it empty for current timestamp',
+    }).then((title) => {
+      createNewNote(title)
+    })
+  })
+
+  function createNewNote(title) {
+    const date = new Date()
+    const noteTitle = title ? date.toISOString() + '-' + title + '.md' : date.toISOString() + '.md'
+    createDirsIfNotExist()
+
+    const filePath = path.join(NOTES_DIR, noteTitle)
+    if (!fs.existsSync(filePath)) {
+      fs.writeFileSync(filePath, `# Note Entry - ${date.toUTCString()}\n\n`)
+    }
+
+    vscode.workspace.openTextDocument(filePath).then((doc) => {
+      vscode.window.showTextDocument(doc)
+    })
+  }
+
   const disposableSetGitRemote = vscode.commands.registerCommand('extension.setGitRemote', async function() {
     if (!fs.existsSync(ROOT_DIR)) {
       createDirsIfNotExist()
@@ -49,11 +81,11 @@ function activate(context) {
     if (!isGitRepository(ROOT_DIR)) {
       exec('git init', (error, stdout, stderr) => {
         if (error) {
-          vscode.window.showErrorMessage(`Failed to initialize Git repository: ${error.message}`)
+          vscode.window.showErrorMessage(`VSJournal: Failed to initialize Git repository: ${error.message}`)
           return
         }
         if (stderr) {
-          vscode.window.showErrorMessage(`Failed to initialize Git repository: ${stderr}`)
+          vscode.window.showErrorMessage(`VSJournal: Failed to initialize Git repository: ${stderr}`)
           return
         }
         setRemote()
@@ -65,7 +97,7 @@ function activate(context) {
 
   const disposableSync = vscode.commands.registerCommand('extension.syncToGitHub', function() {
     if (!fs.existsSync(ROOT_DIR)) {
-      vscode.window.showErrorMessage('VSJournal directory does not exist. Please create it first.')
+      vscode.window.showErrorMessage('VSJournal: directory does not exist. Please create it first.')
       return
     }
 
@@ -73,33 +105,33 @@ function activate(context) {
 
     if (!isGitRepository()) {
       // eslint-disable-next-line max-len
-      vscode.window.showErrorMessage('Not in a Git repository. Please open a VS Journal directory with Git initialized.')
+      vscode.window.showErrorMessage('VSJournal: Please run set remote command before sync.')
       return
     }
 
     exec('git status --porcelain', (error, stdout, stderr) => {
       if (error) {
-        vscode.window.showErrorMessage(`Failed to check for changes: ${error.message}`)
+        vscode.window.showErrorMessage(`VSJournal: Failed to check for changes: ${error.message}`)
         return
       }
       if (stderr) {
-        vscode.window.showErrorMessage(`Failed to check for changes: ${stderr}`)
+        vscode.window.showErrorMessage(`VSJournal: Failed to check for changes: ${stderr}`)
         return
       }
 
       if (stdout.trim() === '') {
         console.log('No changes to sync.')
-        vscode.window.showInformationMessage('No changes to sync.')
+        vscode.window.showInformationMessage('VSJournal: No changes to sync.')
         return
       }
 
       exec('git add . && git commit -m "Sync to GitHub"', (error, stdout, stderr) => {
         if (error) {
-          vscode.window.showErrorMessage(`Failed to commit changes: ${error.message}`)
+          vscode.window.showErrorMessage(`VSJournal: Failed to commit changes: ${error.message}`)
           return
         }
         if (stderr) {
-          vscode.window.showErrorMessage(`Failed to commit changes: ${stderr}`)
+          vscode.window.showErrorMessage(`VSJournal: Failed to commit changes: ${stderr}`)
           return
         }
 
@@ -108,11 +140,11 @@ function activate(context) {
             // If master branch doesn't exist, create it
             exec('git checkout -b master', (error, stdout, stderr) => {
               if (error) {
-                vscode.window.showErrorMessage(`Failed to create master branch: ${error.message}`)
+                vscode.window.showErrorMessage(`VSJournal: Failed to create master branch: ${error.message}`)
                 return
               }
               if (stderr) {
-                vscode.window.showErrorMessage(`Failed to create master branch: ${stderr}`)
+                vscode.window.showErrorMessage(`VSJournal: Failed to create master branch: ${stderr}`)
                 return
               }
               pushToOriginMaster()
@@ -130,7 +162,7 @@ function activate(context) {
     // eslint-disable-next-line max-len
     exec('git fetch && git branch --set-upstream-to=origin/master master && git config pull.rebase false && git pull --strategy=recursive -X theirs --allow-unrelated-histories', (error, stdout, stderr) => {
       if (error) {
-        vscode.window.showErrorMessage(`Failed to pull changes from GitHub: ${error.message}`)
+        vscode.window.showErrorMessage(`VSJournal: Failed to pull changes from GitHub: ${error.message}`)
         return
       }
       if (stderr) {
@@ -144,17 +176,17 @@ function activate(context) {
     exec('git push --set-upstream origin master', (error, stdout, stderr) => {
       // eslint-disable-next-line max-len
       if (error && error.code !== 128) { // Ignore exit code 128 (non-error, e.g., when the branch is already up-to-date)
-        vscode.window.showErrorMessage(`Failed to push changes to GitHub: ${error.message}`)
+        vscode.window.showErrorMessage(`VSJournal: Failed to push changes to GitHub: ${error.message}`)
         return
       }
       if (stderr) {
         console.log(`git push stderr: ${stderr}`)
       }
-      vscode.window.showInformationMessage('Changes synced to GitHub successfully.')
+      vscode.window.showInformationMessage('VSJournal: Changes synced to GitHub successfully.')
     })
   }
 
-  context.subscriptions.push(disposableCreateJournal, disposableSetGitRemote, disposableSync)
+  context.subscriptions.push(disposableCreateJournal, disposableCreateNote, disposableSetGitRemote, disposableSync)
 }
 
 function isGitRepository(directory) {
@@ -175,15 +207,15 @@ function setRemote() {
     exec('git remote rm origin', () => {
       exec(`git remote add origin ${remoteUrl}`, (error, stdout, stderr) => {
         if (error) {
-          vscode.window.showErrorMessage(`Failed to set Git remote: ${error.message}`)
+          vscode.window.showErrorMessage(`VSJournal: Failed to set Git remote: ${error.message}`)
           return
         }
         if (stderr) {
-          vscode.window.showErrorMessage(`Failed to set Git remote: ${stderr}`)
+          vscode.window.showErrorMessage(`VSJournal: Failed to set Git remote: ${stderr}`)
           return
         }
         checkoutMaster()
-        vscode.window.showInformationMessage('Git remote set successfully.')
+        vscode.window.showInformationMessage('VSJournal: Git remote set successfully.')
       })
     })
   })
@@ -192,7 +224,7 @@ function setRemote() {
 function checkoutMaster() {
   exec('git rev-parse --is-inside-work-tree', (error, stdout, stderr) => {
     if (error || stderr) {
-      vscode.window.showErrorMessage(`Failed to check if inside a Git repository: ${error?.message || stderr}`)
+      vscode.window.showErrorMessage(`VSJournal: Failed to check if inside a Git repository: ${error?.message || stderr}`)
       return
     }
 
@@ -201,15 +233,13 @@ function checkoutMaster() {
         if (stderr.includes('unknown revision or path not in the working tree')) {
           createMasterBranch()
         } else {
-          vscode.window.showErrorMessage(`Failed to get current branch: ${error?.message || stderr}`)
+          vscode.window.showErrorMessage(`VSJournal: Failed to get current branch: ${error?.message || stderr}`)
         }
         return
       }
 
       const currentBranch = stdout.trim()
-      if (currentBranch === 'master') {
-        vscode.window.showInformationMessage('Already on master branch.')
-      } else {
+      if (currentBranch !== 'master') {
         createMasterBranch()
       }
     })
@@ -219,10 +249,10 @@ function checkoutMaster() {
 function createMasterBranch() {
   exec('git checkout -b master', (error, stdout, stderr) => {
     if (error && !stderr.includes('Switched to a new branch \'master\'')) {
-      vscode.window.showErrorMessage(`Failed to create master branch: ${error.message}`)
+      vscode.window.showErrorMessage(`VSJournal: Failed to create master branch: ${error.message}`)
       return
     }
-    vscode.window.showInformationMessage('Switched to master branch.')
+    vscode.window.showInformationMessage('VSJournal: Switched to master branch.')
   })
 }
 

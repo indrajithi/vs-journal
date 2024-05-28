@@ -2,7 +2,7 @@
 
 Create Journals and Notes in VS Code. Sync to your remote repository.
 
-![Demo](/images/output.gif)
+![Demo](/images/demo.gif)
 
 ## Features
 

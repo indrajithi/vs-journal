@@ -2,7 +2,7 @@
   "name": "vs-journal",
   "displayName": "VSJournal: Create Journals and Notes",
   "description": "Create Journals and Notes and sync to your remote repository",
-  "version": "0.0.4",
+  "version": "0.0.6",
   "publisher": "indr4jith",
   "engines": {
     "vscode": "^1.89.0"

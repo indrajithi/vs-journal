@@ -2,6 +2,8 @@
 
 Create Journals and Notes in VS Code. Sync to your remote repository.
 
+![Demo](/images/output.gif)
+
 ## Features
 
 - Create Journal entry for the day

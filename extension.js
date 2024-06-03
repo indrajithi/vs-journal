@@ -16,7 +16,7 @@ const NOTES_DIR = path.join(ROOT_DIR, 'notes')
 
 function createDirsIfNotExist(dir = null) {
   if (dir && !fs.existsSync(dir)) {
-    fs.mkdirSync(dir)
+    fs.mkdirSync(dir, { recursive: true })
   }
   if (!fs.existsSync(ROOT_DIR)) {
     fs.mkdirSync(ROOT_DIR)
@@ -31,17 +31,13 @@ function createDirsIfNotExist(dir = null) {
   }
 }
 
-
-function getLastPathStructure(path) {
-  if(!path){
-    return ''
+function getTitleAndDirectoryFromPathString(fileStructure) {
+  const directoryArray = fileStructure.split('/');
+  const title = directoryArray.pop()
+  return {
+    folder: directoryArray.join('/'),
+    title
   }
-  const pathComponents = path.split('/');
-  return `${pathComponents[pathComponents.length - 1]}`;
-}
-
-function getCurrentWorkspaceDirectory() {
-  return vscode.workspace.workspaceFolders?.map(folder => folder.uri.path)[0]
 }
 
 function activate(context) {
@@ -66,23 +62,8 @@ function activate(context) {
     vscode.window.showInputBox({
       placeHolder: 'Enter Note Title',
       prompt: 'Enter a title for the note or Leave it empty for current timestamp',
-    }).then((title) => {
-      createNewNote(title)
-    })
-  })
-
-  const disposableCreateNoteInFolder = vscode.commands.registerCommand('extension.createNoteInFolder', function () {
-    vscode.window.showInputBox({
-      placeHolder: 'Enter Folder Name',
-      value: getLastPathStructure(getCurrentWorkspaceDirectory()),
-      prompt: 'Enter the directory name',
-    }).then((folder) => {
-      vscode.window.showInputBox({
-        placeHolder: 'Enter Note Title',
-        prompt: 'Enter a title for the note or leave it empty for current timestamp',
-      }).then((title) => {
-        createNewNote(title, folder)
-      })
+    }).then((pathString) => {
+      createNewNote(pathString)
     })
   })
 
@@ -90,7 +71,8 @@ function activate(context) {
     return title.toLowerCase().replace(/\s+/g, '-');
   }
 
-  function createNewNote(title, folder=null) {
+  function createNewNote(pathString) {
+    const {title, folder} = getTitleAndDirectoryFromPathString(pathString)
     const date = new Date()
     const noteDirectory = folder ? `/${formatTitle(folder)}`: `/`;
     const noteTitle = title ? date.toISOString().slice(0, 19) + '-' + formatTitle(title) + '.md' : date.toISOString().slice(0, 19) + '.md'
@@ -226,7 +208,7 @@ function activate(context) {
     })
   }
 
-  context.subscriptions.push(disposableCreateJournal, disposableCreateNote, disposableCreateNoteInFolder, disposableSetGitRemote, disposableSync)
+  context.subscriptions.push(disposableCreateJournal, disposableCreateNote, disposableSetGitRemote, disposableSync)
 }
 
 function isGitRepository(directory) {

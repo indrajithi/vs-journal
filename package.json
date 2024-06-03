@@ -29,6 +29,10 @@
         "title": "VSJournal: Create New Note"
       },
       {
+        "command": "extension.createNoteInFolder",
+        "title": "VSJournal: Create New Note in Folder"
+      },
+      {
         "command": "extension.setGitRemote",
         "title": "VSJournal: Set Git Remote"
       },

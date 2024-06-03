@@ -1,4 +1,4 @@
- 
+
 const vscode = require('vscode')
 const fs = require('fs')
 const os = require('os')
@@ -14,7 +14,10 @@ const JOURNALS_DIR = path.join(ROOT_DIR, 'journals')
 const NOTES_DIR = path.join(ROOT_DIR, 'notes')
 
 
-function createDirsIfNotExist() {
+function createDirsIfNotExist(dir = null) {
+  if (dir && !fs.existsSync(dir)) {
+    fs.mkdirSync(dir)
+  }
   if (!fs.existsSync(ROOT_DIR)) {
     fs.mkdirSync(ROOT_DIR)
   }
@@ -29,10 +32,22 @@ function createDirsIfNotExist() {
 }
 
 
+function getLastPathStructure(path) {
+  if(!path){
+    return ''
+  }
+  const pathComponents = path.split('/');
+  return `${pathComponents[pathComponents.length - 1]}`;
+}
+
+function getCurrentWorkspaceDirectory() {
+  return vscode.workspace.workspaceFolders?.map(folder => folder.uri.path)[0]
+}
+
 function activate(context) {
   const disposableCreateJournal = vscode.commands.registerCommand('extension.createJournalEntry', function() {
     const date = new Date()
-     
+
     const fileName = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}.md`
     const filePath = path.join(JOURNALS_DIR, fileName)
 
@@ -56,16 +71,32 @@ function activate(context) {
     })
   })
 
-	function formatTitle(title) {
-		return title.toLowerCase().replace(/\s+/g, '-');
-	}
+  const disposableCreateNoteInFolder = vscode.commands.registerCommand('extension.createNoteInFolder', function () {
+    vscode.window.showInputBox({
+      placeHolder: 'Enter Folder Name',
+      value: getLastPathStructure(getCurrentWorkspaceDirectory()),
+      prompt: 'Enter the directory name',
+    }).then((folder) => {
+      vscode.window.showInputBox({
+        placeHolder: 'Enter Note Title',
+        prompt: 'Enter a title for the note or leave it empty for current timestamp',
+      }).then((title) => {
+        createNewNote(title, folder)
+      })
+    })
+  })
 
-  function createNewNote(title) {
+  function formatTitle(title) {
+    return title.toLowerCase().replace(/\s+/g, '-');
+  }
+
+  function createNewNote(title, folder=null) {
     const date = new Date()
+    const noteDirectory = folder ? `/${formatTitle(folder)}`: `/`;
     const noteTitle = title ? date.toISOString().slice(0, 19) + '-' + formatTitle(title) + '.md' : date.toISOString().slice(0, 19) + '.md'
-    createDirsIfNotExist()
+    createDirsIfNotExist(path.join(NOTES_DIR, noteDirectory))
 
-    const filePath = path.join(NOTES_DIR, noteTitle)
+    const filePath = path.join(NOTES_DIR, noteDirectory, noteTitle)
     if (!fs.existsSync(filePath)) {
       fs.writeFileSync(filePath, `# Note: ${title} - ${date.toUTCString().slice(0, 19)}\n\n`)
     }
@@ -108,7 +139,7 @@ function activate(context) {
     process.chdir(ROOT_DIR)
 
     if (!isGitRepository()) {
-       
+
       vscode.window.showErrorMessage('VSJournal: Please run set remote command before sync.')
       return
     }
@@ -164,14 +195,14 @@ function activate(context) {
 
   function pushToOriginMaster() {
 
-		vscode.window.showInformationMessage('VSJournal: Syncing remote repository...')
+    vscode.window.showInformationMessage('VSJournal: Syncing remote repository...')
 
-     
+
     exec('git fetch && git branch --set-upstream-to=origin/master master && git config pull.rebase false && git pull --strategy=recursive -X theirs --allow-unrelated-histories', (error, stdout, stderr) => {
       if (error) {
-				if (error.message.includes(`fatal: the requested upstream branch 'origin/master' does not exist`)){
-					pushChanges()
-				}
+        if (error.message.includes(`fatal: the requested upstream branch 'origin/master' does not exist`)){
+          pushChanges()
+        }
         return
       }
       if (stderr) {
@@ -183,7 +214,7 @@ function activate(context) {
 
   function pushChanges() {
     exec('git push --set-upstream origin master', (error, stdout, stderr) => {
-       
+
       if (error && error.code !== 128) { // Ignore exit code 128 (non-error, e.g., when the branch is already up-to-date)
         vscode.window.showErrorMessage(`VSJournal: Failed to push changes to remote repository: ${error.message}`)
         return
@@ -195,7 +226,7 @@ function activate(context) {
     })
   }
 
-  context.subscriptions.push(disposableCreateJournal, disposableCreateNote, disposableSetGitRemote, disposableSync)
+  context.subscriptions.push(disposableCreateJournal, disposableCreateNote, disposableCreateNoteInFolder, disposableSetGitRemote, disposableSync)
 }
 
 function isGitRepository(directory) {

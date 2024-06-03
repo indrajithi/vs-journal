@@ -17,6 +17,7 @@ Create Journals and Notes in VS Code. Sync to your remote repository.
 Open the command runner: `cmd + p + >`
 
 1. VSJournal: Journal
-2. VSJournal: Create a New Note'
-3. VSJournal: Set Git Remote
-4. VSJournal: Sync Remote Git
+2. VSJournal: Create a New Note
+3. VSJournal: Create a New Note in Folder
+4. VSJournal: Set Git Remote
+5. VSJournal: Sync Remote Git

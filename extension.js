@@ -61,7 +61,7 @@ function activate(context) {
   const disposableCreateNote = vscode.commands.registerCommand('extension.createNoteEntry', function() {
     vscode.window.showInputBox({
       placeHolder: 'Enter Note Title',
-      prompt: 'Enter a title for the note or Leave it empty for current timestamp',
+      prompt: 'Enter a title for the note or Leave it empty for current timestamp. You can also add prefix the directory eg: meetings/adam<>eve',
     }).then((pathString) => {
       createNewNote(pathString)
     })

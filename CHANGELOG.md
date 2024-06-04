@@ -4,6 +4,13 @@ All notable changes to the "vs-journal" extension will be documented in this fil
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
-## [Unreleased]
+## [0.0.8]
 
-- Initial release
+- Create notes in folder
+
+## [0.0.7]
+
+- Create Journal entry for the day
+- Create Notes
+- Set Remote Repository
+- Sync Remote Repository
